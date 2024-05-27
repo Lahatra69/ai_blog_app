@@ -9,6 +9,7 @@ from pytube import YouTube
 import openai
 import os
 import assemblyai as aai
+from django.conf import settings
 
 
 # Create your views here.
@@ -23,19 +24,29 @@ def generate_blog(request):
         try:
             data = json.loads(request.body)
             yt_link = data["link"]
-            return JsonResponse({"content": yt_link})
+            # return JsonResponse({"content": yt_link})
         except (KeyError, json.JSONDecodeError):
             return JsonResponse({"error": "Invalid data sent."}, status=400)
 
         # get yt title
+        title = yt_title(yt_link)
 
         # get transcript
+        transcription = get_transcription(yt_link)
+        if not transcription:
+            return JsonResponse({"error": " Failed to get transcript"}, status=500)
 
         # use openai to generate blog content
+        blog_content = generate_blog_from_transcription(transcription)
+        if not blog_content:
+            return JsonResponse(
+                {"error": " Failed to generate blog article"}, status=500
+            )
 
         # save article to db
 
         # return blog article as response
+        return JsonResponse({"content": blog_content})
     else:
         return JsonResponse({"error": "Invalid request method."}, status=405)
 
@@ -46,10 +57,14 @@ def yt_title(link):
     return title
 
 
-def yt_title(link):
+def download_audio(link):
     yt = YouTube(link)
-    title = yt.title
-    return title
+    video = yt.streams.filter(only_audio=True).first()
+    out_file = video.download(output_path=settings.MEDIA_ROOT)
+    base, ext = os.path.splitext(out_file)
+    new_file = base + ".mp3"
+    os.rename(out_file, new_file)
+    return new_file
 
 
 def get_transcription(link):
