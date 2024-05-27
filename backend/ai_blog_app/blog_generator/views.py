@@ -6,6 +6,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
 from pytube import YouTube
+import openai
+import os
+import assemblyai as aai
 
 
 # Create your views here.
@@ -49,10 +52,29 @@ def yt_title(link):
     return title
 
 
-def yt_title(link):
-    yt = YouTube(link)
-    title = yt.title
-    return title
+def get_transcription(link):
+    audio_file = download_audio(link)
+    aai.settings.api_key = "your-api"
+    transcriber = aai.Transcriber()
+    transcript = transcriber.transcribe(audio_file)
+
+    return transcriber.text
+
+
+def generate_blog_from_transcription(transcription):
+    openai.api_key = "your-api"
+
+    prompt = f"Based on the following transcript from a YouTube video, write a comprehensive blog article, write it based on the transcript, but dont make it look like a youtube video, make it look like a proper blog article:\n\n{transcription}\n\nArticle:"
+
+    response = openai.Completion.create(
+        model="text-davinci-003",
+        prompt=prompt,
+        max_tokens=1000,
+    )
+
+    generated_content = response.choices[0].text.strip()
+
+    return generated_content
 
 
 def user_login(request):
