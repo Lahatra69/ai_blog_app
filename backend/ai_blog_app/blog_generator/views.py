@@ -43,6 +43,18 @@ def yt_title(link):
     return title
 
 
+def yt_title(link):
+    yt = YouTube(link)
+    title = yt.title
+    return title
+
+
+def yt_title(link):
+    yt = YouTube(link)
+    title = yt.title
+    return title
+
+
 def user_login(request):
     if request.method == "POST":
         username = request.POST.get("username")
